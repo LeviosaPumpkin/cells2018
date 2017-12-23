@@ -1,1 +1,1 @@
-# cells2018
+#to run the program from command promt use 2 arguments: path to a pictyre and path to csv file
