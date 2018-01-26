@@ -41,7 +41,48 @@ std::vector<std::string> photos_of_cells = { "D://studies//cells//1part//1.jpg",
 	"D://studies//cells//1part//31.jpg", 
 	"D://studies//cells//1part//33.jpg", 
 	"D://studies//cells//1part//34.jpg", 
-	"D://studies//cells//1part//37.jpg"};
+	"D://studies//cells//1part//37.jpg",
+	"D://studies//cells//1part//38.jpg", 
+	"D://studies//cells//1part//39.jpg", 
+	"D://studies//cells//1part//40.jpg", 
+	"D://studies//cells//1part//41.jpg", 
+	"D://studies//cells//1part//43.jpg", 
+	"D://studies//cells//1part//44.jpg", 
+	"D://studies//cells//1part//45.jpg", 
+	"D://studies//cells//1part//46.jpg", 
+	"D://studies//cells//1part//47.jpg", 
+	"D://studies//cells//1part//48.jpg", 
+	"D://studies//cells//1part//52.jpg", 
+	"D://studies//cells//1part//53.jpg", 
+	"D://studies//cells//1part//54.jpg", 
+	"D://studies//cells//1part//55.jpg", 
+	"D://studies//cells//1part//56.jpg", 
+	"D://studies//cells//1part//57.jpg", 
+	"D://studies//cells//1part//58.jpg", 
+	"D://studies//cells//1part//59.jpg", 
+	"D://studies//cells//1part//60.jpg", 
+	"D://studies//cells//1part//61.jpg", 
+	"D://studies//cells//1part//62.jpg", 
+	"D://studies//cells//1part//63.jpg", 
+	"D://studies//cells//1part//65.jpg", 
+	"D://studies//cells//1part//68.jpg", 
+	"D://studies//cells//1part//69.jpg", 
+	"D://studies//cells//1part//71.jpg",
+	"D://studies//cells//1part//72.jpg",
+	"D://studies//cells//1part//73.jpg",
+	"D://studies//cells//1part//75.jpg",
+	"D://studies//cells//1part//76.jpg",
+	"D://studies//cells//1part//77.jpg",
+	"D://studies//cells//1part//79.jpg",
+	"D://studies//cells//1part//85.jpg",
+	"D://studies//cells//1part//86.jpg",
+	"D://studies//cells//1part//87.jpg",
+	"D://studies//cells//1part//88.jpg",
+	"D://studies//cells//1part//89.jpg",
+	"D://studies//cells//1part//90.jpg",
+	"D://studies//cells//1part//91.jpg",
+	"D://studies//cells//1part//92.jpg"
+};
 
 int findCells(const char * filename, cv::Scalar low_color, cv::Scalar high_color)
 {
@@ -68,7 +109,6 @@ int findCells(const char * filename, cv::Scalar low_color, cv::Scalar high_color
 	/*count cells*/
 	std::vector<std::vector<cv::Point> > contours;
 	vector<Vec4i> hierarchy;
-	//file.open("C://Users//Храмцова//Documents//Visual Studio 2013//Projects//cells//cells//result.csv");
 	//if (!file) return -1;
 	//file << "imagePath;sample №;classID;centerX;centerY;leftX;topY;rightX;bottomY\n";
 	cv::findContours(binary, contours, hierarchy, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
@@ -98,31 +138,38 @@ int main(int argc, const char** argv)
 		filename = (char*)argv[1];
 		outPath = (char*)argv[2];
 	} else{
-		//filename = "10.jpg";
+		filename = "10.jpg";
 		outPath = "result.csv";
 	}
 		
-	file.open(outPath);
-	//const char* filename="10.jpg";
+	//file.open(outPath);
+	std::fstream file_with_colours;
+	file_with_colours.open("file_with_colours.csv");
+	file_with_colours << "imagePath;blue;red;green\n";
 	for (int i = 0; i < photos_of_cells.size(); ++i)
 	{
-		//filename = photos_of_cells[i].c_str();
-		//std::copy(photos_of_cells[i].begin(); photos_of_cells[i].end(), filename);
 		int num = 0;
 		std::cout << "File: " << photos_of_cells[i].c_str() << "\n";
+		file_with_colours << photos_of_cells[i].c_str() << ";";
+
 		cv::Scalar low_blue = ::Scalar(20, 20, 0); cv::Scalar high_blue = ::Scalar(255, 255, 0);
 		num = findCells(photos_of_cells[i].c_str(), low_blue, high_blue);
 		std::cout << "Num of blue cells: " << num << "\n";
+		file_with_colours << num << ";";
 
 		cv::Scalar low_red = ::Scalar(0, 20, 20); cv::Scalar high_red = cv::Scalar(0, 255, 255);
 		num = findCells(photos_of_cells[i].c_str(), low_red, high_red);
 		std::cout << "Num of red cells: " << num << "\n";
+		file_with_colours << num << ";";
 
 		cv::Scalar low_green = ::Scalar(50, 0, 100); cv::Scalar high_green = cv::Scalar(255, 0, 255);
 		num = findCells(photos_of_cells[i].c_str(), low_green, high_green);
 		std::cout << "Num of green cells: " << num << "\n";
+		file_with_colours << num << ";\n";
 
 	}
+
+	file_with_colours.close();
 	
 	cvWaitKey(0);
 
