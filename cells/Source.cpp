@@ -11,59 +11,96 @@
 //наложить контуры друг на друга
 //иерархия контуров - еще 1 вариант
 
-int main(int argc, const char** argv)
+cv::Mat binarize(const char * filename, cv::Scalar low_color, cv::Scalar high_color)
 {
-	char* filename = NULL;
-	char* outPath = NULL;
-	
-	if (argc >= 2) {
-		filename = (char*)argv[1];
-		outPath = (char*)argv[2];
-	} else{
-		filename = "D://studies//cells//segmentation//17_R_Prol_40x_dapi_2.jpg";
-		outPath = "result.csv";
-	}
 	cv::Mat im = cv::imread(filename);
 	imshow("original", im);
+	/*binarisation*/
+	//1
+	cv::Mat hsv_im;
+	cvtColor(im, hsv_im, CV_BGR2GRAY);
+	cv::Mat binary;
+	inRange(hsv_im, low_color, high_color, binary);
+	cv::imshow("bin", binary);
 
-	//cv::blur(im, im, cv::Size(50, 50));
-	//imshow("blurred", im);
 
-	cv::Mat p = cv::Mat::zeros(im.cols*im.rows, 5, CV_32F);
-	cv::Mat bestLabels, centers, clustered;
+	/*borders/*/
+	cv::Mat mStructuringElement = cv::getStructuringElement(CV_SHAPE_ELLIPSE, cv::Size(5, 5));
 
-	std::vector<cv::Mat> bgr(3);
-	cv::split(im, bgr);
-	for (int i = 0; i<im.cols*im.rows; i++) {
-		p.at<float>(i, 0) = (i / im.cols) / im.rows;
-		p.at<float>(i, 1) = (i%im.cols) / im.cols;
-		p.at<float>(i, 2) = bgr[0].data[i] / 255.0;
-		p.at<float>(i, 3) = bgr[1].data[i] / 255.0;
-		p.at<float>(i, 4) = bgr[2].data[i] / 255.0;
-	}
+	//cv::dilate(binary, binary, mStructuringElement, cv::Point(0, 0), 1, 1, 1);//more white
+	cv::erode(binary, binary, mStructuringElement, cv::Point(-1, -1), 2);//more black
+	cv::imshow("erode", binary);
+	return binary;
+}
 
-	int K = 2;
-	cv::kmeans(p, K, bestLabels,
-		cv::TermCriteria(CV_TERMCRIT_EPS + CV_TERMCRIT_ITER, 10, 1.0),
-		3, cv::KMEANS_PP_CENTERS);
-
-	//int* colors = new int[K];
-	std::vector<int> colors(K);
-	for (int i = 0; i<K; i++) 
+std::vector<cv::Point> getCoordinates(const char * filename)
+{
+	std::fstream file(filename);
+	std::vector<int> tmpVec;
+	int flag = 0;
+	while (file.good())
 	{
-		colors[i] = 255 / (i + 1);
+		std::string str;
+		if (flag == 0)
+		{
+			std::getline(file, str, ';');
+			if (str == "") break;
+			tmpVec.push_back(std::stoi(str));
+			flag = 1;
+		}
+		else
+		{
+			std::getline(file, str, '\n');
+			tmpVec.push_back(std::stoi(str));
+			flag = 0;
+		}
 	}
+	std::vector<cv::Point> coordinatesVector;
+	for (int i = 0; i < tmpVec.size(); i+=2)
+	{
+		coordinatesVector.push_back(cv::Point(tmpVec[i], tmpVec[i + 1]));
+	}
+	return coordinatesVector;
+}
+
+void cutKernels(cv::Mat im, std::vector<cv::Point> centers, int width, int height)
+{
+	for (int i = 0; i < centers.size(); i++)
+	{
+		cv::Mat imKernel;
+		int corner_x, corner_y;
+		if (centers[i].x < width / 2) corner_x = centers[i].x; else corner_x = centers[i].x - width / 2;
+		if (centers[i].y < height / 2) corner_y = centers[i].y; else corner_y = centers[i].y - height / 2;
+
+		imKernel = im(cv::Rect(corner_x, corner_y, width, height));
+		cv::resize(imKernel, imKernel, cv::Size(24, 24));
+		cv::imwrite(std::to_string(i) + ".jpg", imKernel);
+	}
+}
+
+int main(int argc, const char** argv)
+{
+	char* picturePath = NULL;
+	char* dataPath = NULL;
 	
-	clustered = cv::Mat(im.rows, im.cols, CV_32F);
-	for (int i = 0; i<im.cols*im.rows; i++) 
-	{
-		clustered.at<float>(i / im.cols, i%im.cols) = (float)(colors[bestLabels.at<int>(i, 0)]);
+	if (argc >= 2) {
+		picturePath = (char*)argv[1];
+		dataPath = (char*)argv[2];
+	} else{
+		picturePath = "D:\\studies\\cells\\1part\\4.jpg";
+		dataPath = "D:\\studies\\cells\\1part\\4jpg.csv";
 	}
+	cv::Mat im = cv::imread(picturePath);
+	cv::imshow("original", im);
 
-	clustered.convertTo(clustered, CV_8U);
-	imshow("clustered", clustered);
+	im = binarize(picturePath, cv::Scalar(20, 20, 0), cv::Scalar(255, 255, 0));
 
-	cvWaitKey(0);
+	std::vector<cv::Point> kernelCoordinates = getCoordinates(dataPath);
+
+	cutKernels(im, kernelCoordinates, 65, 75);
+	std::cout << "end";
+
+	cv::waitKey(0);
 
 	return 0;
 }
